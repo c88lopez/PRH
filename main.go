@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const csvFilePath = "./2018-08-01 PRH-Ampliaciones de stocks en consignacion para sucursales parte 1.csv"
+const csvFilePath = "./2018-01-22 PRH-Reposicion en consignacion para sucursales numero de OC 1121430.csv"
 
 func main() {
 	var newFileContent [][]string
