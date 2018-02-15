@@ -7,9 +7,12 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 )
 
 const csvsFolderPath = "csvs"
+
+var waitGroup sync.WaitGroup
 
 func main() {
 	csvsFolder, err := os.Open(csvsFolderPath)
@@ -29,11 +32,16 @@ func main() {
 		}
 		defer file.Close()
 
-		createConvertedFile(file)
+		waitGroup.Add(1)
+		go createConvertedFile(file)
 	}
+
+	waitGroup.Wait()
 }
 
 func createConvertedFile(file *os.File) {
+	defer waitGroup.Done()
+
 	var newFileContent [][]string
 
 	newFileContent = append(newFileContent, []string{"Clase de pedido", "Org. de Vtas.", "Canal de Dist.", "Solicitante", "Dest. de Merc", "Nro. Ord. Comp. Cli.", "Fe. Doc.", "Cond. de Pago", "Cond. de Exp.", "Motivo", "Clase Pedido Cli.", "Fe. Venc.", "Fe. creac. Ord. Comp.", "Fe. Ent.", "Moneda", "Material", "Material del Cliente", "PVP", "Descuento", "Cantidad"})
