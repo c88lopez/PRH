@@ -2,22 +2,41 @@ package main
 
 import (
 	"encoding/csv"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"strings"
 )
 
-const csvFilePath = "./2018-08-01 PRH-Ampliaciones de stocks en consignacion para sucursales parte 1.csv"
+const csvsFolderPath = "csvs"
 
 func main() {
-	var newFileContent [][]string
-	newFileContent = append(newFileContent, []string{"Clase de pedido", "Org. de Vtas.", "Canal de Dist.", "Solicitante", "Dest. de Merc", "Nro. Ord. Comp. Cli.", "Fe. Doc.", "Cond. de Pago", "Cond. de Exp.", "Motivo", "Clase Pedido Cli.", "Fe. Venc.", "Fe. creac. Ord. Comp.", "Fe. Ent.", "Moneda", "Material", "Material del Cliente", "PVP", "Descuento", "Cantidad"})
-
-	file, err := os.Open(csvFilePath)
+	csvsFolder, err := os.Open(csvsFolderPath)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	csvFiles, err := csvsFolder.Readdir(0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, csvFile := range csvFiles {
+		file, err := os.Open(fmt.Sprintf("%s%c%s", csvsFolderPath, os.PathSeparator, csvFile.Name()))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+
+		createConvertedFile(file)
+	}
+}
+
+func createConvertedFile(file *os.File) {
+	var newFileContent [][]string
+
+	newFileContent = append(newFileContent, []string{"Clase de pedido", "Org. de Vtas.", "Canal de Dist.", "Solicitante", "Dest. de Merc", "Nro. Ord. Comp. Cli.", "Fe. Doc.", "Cond. de Pago", "Cond. de Exp.", "Motivo", "Clase Pedido Cli.", "Fe. Venc.", "Fe. creac. Ord. Comp.", "Fe. Ent.", "Moneda", "Material", "Material del Cliente", "PVP", "Descuento", "Cantidad"})
 
 	csvReader := csv.NewReader(file)
 
@@ -29,7 +48,7 @@ func main() {
 	orderNumbers := record[2:]
 
 	record, err = csvReader.Read() // i do nothing with this
-	record, err = csvReader.Read()
+	// record, err = csvReader.Read()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,7 +85,12 @@ func main() {
 		}
 	}
 
-	w := csv.NewWriter(os.Stdout)
+	convertedFile, err := os.Create(strings.Replace(file.Name(), ".csv", " converted.csv", 1))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w := csv.NewWriter(convertedFile)
 	w.WriteAll(newFileContent) // calls Flush internally
 
 	if err := w.Error(); err != nil {
