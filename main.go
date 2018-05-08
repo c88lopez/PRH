@@ -27,8 +27,13 @@ func main() {
 
 	for _, csvFile := range csvFiles {
 		file, err := os.Open(fmt.Sprintf("%s%c%s", csvsFolderPath, os.PathSeparator, csvFile.Name()))
+
+		if skipFile(file) {
+			continue
+		}
+
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Error opening csv file", fmt.Sprintf("%s%c%s", csvsFolderPath, os.PathSeparator, csvFile.Name()), err)
 		}
 		defer file.Close()
 
@@ -53,7 +58,7 @@ func createConvertedFile(file *os.File) {
 
 	record, err := csvReader.Read()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error reading csv record (first) ", file.Name(), err)
 	}
 
 	orderNumbers := record[2:]
@@ -61,7 +66,7 @@ func createConvertedFile(file *os.File) {
 	record, err = csvReader.Read() // i do nothing with this
 	// record, err = csvReader.Read()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error reading csv record (second) ", err)
 	}
 
 	clientAddresses := record[2:]
@@ -76,7 +81,7 @@ func createConvertedFile(file *os.File) {
 				break
 			}
 
-			log.Fatal(err)
+			log.Fatal("Error reading records in loop ", err)
 		}
 
 		isbnCount++
@@ -98,13 +103,18 @@ func createConvertedFile(file *os.File) {
 
 	convertedFile, err := os.Create(strings.Replace(file.Name(), ".csv", " converted.csv", 1))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error creating converted csv file ", strings.Replace(file.Name(), ".csv", " converted.csv", 1), err)
 	}
 
 	w := csv.NewWriter(convertedFile)
 	w.WriteAll(newFileContent) // calls Flush internally
 
 	if err := w.Error(); err != nil {
-		log.Fatalln("error writing csv:", err)
+		log.Fatalln("error writing converted csv file ", err)
 	}
+}
+
+func skipFile(file *os.File) bool {
+	return file.Name() == fmt.Sprintf("%s%c%s", csvsFolderPath, os.PathSeparator, ".gitkeep") ||
+		strings.Contains(file.Name(), "converted")
 }
