@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
 
 const csvsFolderPath = "csvs"
@@ -17,6 +18,9 @@ const skipFileRegex = ".gitkeep|converted|.xls$"
 var waitGroup sync.WaitGroup
 
 func main() {
+	log.Println("Starting...")
+	start := time.Now()
+
 	csvsFolder, err := os.Open(csvsFolderPath)
 	if err != nil {
 		log.Fatal(err)
@@ -44,6 +48,8 @@ func main() {
 	}
 
 	waitGroup.Wait()
+
+	log.Printf("End - Elapsed time: %s.\n", time.Since(start))
 }
 
 func createConvertedFile(file *os.File) {
