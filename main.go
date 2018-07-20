@@ -6,11 +6,13 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 )
 
 const csvsFolderPath = "csvs"
+const skipFileRegex = ".gitkeep|converted|.xls$"
 
 var waitGroup sync.WaitGroup
 
@@ -47,13 +49,6 @@ func main() {
 func createConvertedFile(file *os.File) {
 	defer waitGroup.Done()
 
-	var newFileContent [][]string
-
-	newFileContent = append(newFileContent, []string{"Clase de pedido", "Org. de Vtas.", "Canal de Dist.",
-		"Solicitante", "Dest. de Merc", "Nro. Ord. Comp. Cli.", "Fe. Doc.", "Cond. de Pago", "Cond. de Exp.",
-		"Motivo", "Clase Pedido Cli.", "Fe. Venc.", "Fe. creac. Ord. Comp.", "Fe. Ent.", "Moneda", "Material",
-		"Material del Cliente", "PVP", "Descuento", "Cantidad"})
-
 	csvReader := csv.NewReader(file)
 
 	record, err := csvReader.Read()
@@ -64,7 +59,6 @@ func createConvertedFile(file *os.File) {
 	orderNumbers := record[2:]
 
 	record, err = csvReader.Read() // i do nothing with this
-	// record, err = csvReader.Read()
 	if err != nil {
 		log.Fatal("Error reading csv record (second) ", err)
 	}
@@ -88,6 +82,23 @@ func createConvertedFile(file *os.File) {
 		isbnOrders = append(isbnOrders, record)
 	}
 
+	generateConvertedFile(
+		file,
+		generateFileContent(isbnCount, isbnOrders, orderNumbers, clientAddresses))
+}
+
+func skipFile(file *os.File) bool {
+	return regexp.MustCompile(skipFileRegex).MatchString(file.Name())
+}
+
+func generateFileContent(isbnCount int, isbnOrders [][]string, orderNumbers []string, clientAddresses []string) [][]string {
+	var newFileContent [][]string
+
+	newFileContent = append(newFileContent, []string{"Clase de pedido", "Org. de Vtas.", "Canal de Dist.",
+		"Solicitante", "Dest. de Merc", "Nro. Ord. Comp. Cli.", "Fe. Doc.", "Cond. de Pago", "Cond. de Exp.",
+		"Motivo", "Clase Pedido Cli.", "Fe. Venc.", "Fe. creac. Ord. Comp.", "Fe. Ent.", "Moneda", "Material",
+		"Material del Cliente", "PVP", "Descuento", "Cantidad"})
+
 	for orderNumberIndex, orderNumber := range orderNumbers {
 		for i := 0; i < isbnCount; i++ {
 
@@ -101,20 +112,21 @@ func createConvertedFile(file *os.File) {
 		}
 	}
 
-	convertedFile, err := os.Create(strings.Replace(file.Name(), ".csv", " converted.csv", 1))
+	return newFileContent
+}
+
+func generateConvertedFile(file *os.File, content [][]string) {
+	convertedFile, err := os.Create(strings.Replace(
+		file.Name(), ".csv", " converted.csv", 1))
 	if err != nil {
-		log.Fatal("Error creating converted csv file ", strings.Replace(file.Name(), ".csv", " converted.csv", 1), err)
+		log.Fatal("Error creating converted csv file ",
+			strings.Replace(file.Name(), ".csv", " converted.csv", 1), err)
 	}
 
 	w := csv.NewWriter(convertedFile)
-	w.WriteAll(newFileContent) // calls Flush internally
+	w.WriteAll(content) // calls Flush internally
 
 	if err := w.Error(); err != nil {
 		log.Fatalln("error writing converted csv file ", err)
 	}
-}
-
-func skipFile(file *os.File) bool {
-	return file.Name() == fmt.Sprintf("%s%c%s", csvsFolderPath, os.PathSeparator, ".gitkeep") ||
-		strings.Contains(file.Name(), "converted")
 }
