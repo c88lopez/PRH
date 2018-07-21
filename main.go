@@ -35,8 +35,6 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 		}
 		defer file.Close()
 
-		log.Println(handler.Header)
-
 		f, err := os.OpenFile(fmt.Sprintf("%s%c%s", csvsFolderPath, os.PathSeparator, handler.Filename), os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
 			log.Println("Error saving uploaded file: ", err)
