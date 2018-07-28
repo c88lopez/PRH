@@ -1,23 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
 	"io"
 	"log"
-	"os"
-	"regexp"
 	"strings"
 )
 
-// CreateConvertedFile CreateConvertedFile
-func CreateConvertedFile(file *os.File) {
-	defer waitGroup.Done()
-
+// Convert Convert
+func Convert(file io.Reader) io.Reader {
 	csvReader := csv.NewReader(file)
 
 	record, err := csvReader.Read()
 	if err != nil {
-		log.Fatal("Error reading csv record (first) ", file.Name(), err)
+		log.Fatal("Error reading csv record (first) ", err)
 	}
 
 	orderNumbers := record[2:]
@@ -46,13 +43,13 @@ func CreateConvertedFile(file *os.File) {
 		isbnOrders = append(isbnOrders, record)
 	}
 
-	generateConvertedFile(
-		file,
-		generateFileContent(isbnCount, isbnOrders, orderNumbers, clientAddresses))
-}
+	buf := bytes.NewBufferString("")
+	csvWriter := csv.NewWriter(buf)
 
-func skipFile(file *os.File) bool {
-	return regexp.MustCompile(skipFileRegex).MatchString(file.Name())
+	csvWriter.WriteAll(generateFileContent(
+		isbnCount, isbnOrders, orderNumbers, clientAddresses))
+
+	return buf
 }
 
 func generateFileContent(isbnCount int, isbnOrders [][]string, orderNumbers []string, clientAddresses []string) [][]string {
@@ -77,20 +74,4 @@ func generateFileContent(isbnCount int, isbnOrders [][]string, orderNumbers []st
 	}
 
 	return newFileContent
-}
-
-func generateConvertedFile(file *os.File, content [][]string) {
-	convertedFile, err := os.Create(strings.Replace(
-		file.Name(), ".csv", " converted.csv", 1))
-	if err != nil {
-		log.Fatal("Error creating converted csv file ",
-			strings.Replace(file.Name(), ".csv", " converted.csv", 1), err)
-	}
-
-	w := csv.NewWriter(convertedFile)
-	w.WriteAll(content) // calls Flush internally
-
-	if err := w.Error(); err != nil {
-		log.Fatalln("error writing converted csv file ", err)
-	}
 }
