@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/csv"
+	"fmt"
 	"io"
 	"log"
 	"strings"
@@ -11,11 +12,14 @@ import (
 // Convert Convert
 func Convert(file io.Reader) io.Reader {
 	csvReader := csv.NewReader(file)
+	csvReader.Comma = ';'
 
 	record, err := csvReader.Read()
 	if err != nil {
 		log.Fatal("Error reading csv record (first) ", err)
 	}
+
+	fmt.Printf("%#v", record)
 
 	orderNumbers := record[2:]
 
